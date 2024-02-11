@@ -1,0 +1,26 @@
+# About this file, see:
+#   Website: https://editorconfig.org/
+#   For Emacs users: https://github.com/editorconfig/editorconfig-emacs
+#   For Vim users: https://github.com/editorconfig/editorconfig-vim
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+tab_width = 8
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+#max_line_length = 160
+
+[*.{c,cc,C,cxx,cpp,h,hh,H,hxx,hpp,inc}]
+
+[{*.rb,Rakefile,rakefile,*.rake,*.gemspec,*.gembox}]
+
+[*.{yaml,yml}]
+trim_trailing_whitespace = false
+
+[*.md]
+trim_trailing_whitespace = false

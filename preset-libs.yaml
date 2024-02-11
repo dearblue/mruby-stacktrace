@@ -1,0 +1,155 @@
+- name: LIBBACKTRACE
+  libraries: backtrace
+  header_files:
+  - backtrace.h
+  functions:
+  - backtrace_full
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: EXECINFO # for GNU libc
+  header_files:
+  - execinfo.h
+  functions:
+  - backtrace
+  - backtrace_symbols_fmt
+
+- name: EXECINFO # for BSD libexecinfo
+  libraries:
+  - execinfo
+  header_files:
+  - execinfo.h
+  functions:
+  - backtrace
+  - backtrace_symbols_fmt
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - unwind-x86_64
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - unwind-x86
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - libunwind-aarch64
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - libunwind-arm
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - libunwind-ppc32
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: LIBUNWIND
+  libraries:
+  - unwind
+  - libunwind-ppc64
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+
+- name: BOOST
+  libraries:
+  - boost_stacktrace_addr2line
+  - dl
+  - backtrace
+  defines:
+  - BOOST_STACKTRACE_USE_ADDR2LINE
+  - _GNU_SOURCE
+  header_files:
+  - boost/stacktrace.hpp
+  functions:
+  - boost::stacktrace::stacktrace
+  include_paths:
+  - "/usr/local/include"
+  library_paths:
+  - "/usr/local/lib"
+  abi: c++
+
+- name: LIBUNWIND
+  libraries:
+  - gcc_eh
+  header_files:
+  - libunwind.h
+  functions:
+  - unw_getcontext
+  - unw_init_local
+  - unw_get_reg
+  - unw_get_proc_name
