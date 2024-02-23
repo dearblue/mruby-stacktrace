@@ -27,45 +27,38 @@ static const char digest_table[] = {
 static char *
 addr_to_hex(size_t addr, size_t bufsize, char buf[])
 {
-  char *p = buf + 2 + 2 * sizeof(void *);
-  *p-- = '\0';
+  char *p = buf + bufsize;
+  *--p = '\0';
 
   for (; addr > 0; addr >>= 4) {
-    *p-- = digest_table[addr & 0x0f];
+    *--p = digest_table[addr & 0x0f];
   }
 
-  while (p - buf >= 2) {
-    *p-- = '0';
+  while (p > buf + bufsize - 1 - (sizeof(void *) * 2)) {
+    *--p = '0';
   }
 
-  *p-- = 'x';
-  *p = '0';
+  *--p = 'x';
+  *--p = '0';
 
-  return buf;
+  return p;
 }
 
 static char *
 int_to_str(size_t num, size_t bufsize, char buf[], int base)
 {
-  char *p = buf;
+  char *p = buf + bufsize;
+  *--p = '\0';
+
   if (num == 0) {
-    buf[0] = '0';
-    buf[1] = '\0';
+    *--p = '0';
   } else {
     for (; num > 0; num /= base) {
-      *p++ = digest_table[num % base];
-    }
-    *p-- = '\0';
-
-    char *q = buf;
-    while (p > q) {
-      char w = *p;
-      *p-- = *q;
-      *q++ = w;
+      *--p = digest_table[num % base];
     }
   }
 
-  return buf;
+  return p;
 }
 
 static char *
@@ -82,44 +75,6 @@ fiber_tac_name(char buf[6], const struct mrb_context *cxt)
   buf[5] = '\0';
 
   return buf;
-}
-
-static void
-report_frame(mrb_state *mrb, struct mrb_context *c, mrb_callinfo *ci, mrb_value bt,
-             intptr_t pc, const char *function, intptr_t funcdiff, const char *filename, int lineno)
-{
-  char buf[32];
-
-  mrb_value entry = mrb_str_new(mrb, NULL, 0);
-
-  if (pc > 0) {
-    mrb_str_cat_cstr(mrb, entry, addr_to_hex((size_t)pc, sizeof(buf), buf));
-  } else {
-    mrb_str_cat_lit(mrb, entry, COND64("             ", "     "));
-    mrb_str_cat_cstr(mrb, entry, fiber_tac_name(buf, c));
-    mrb_str_cat_lit(mrb, entry, "+");
-    mrb_str_cat_cstr(mrb, entry, int_to_str((ci - c->cibase), sizeof(buf), buf, 10));
-  }
-
-  mrb_str_cat_lit(mrb, entry, " ");
-  mrb_str_cat_cstr(mrb, entry, function);
-
-  if (funcdiff > 0) {
-    mrb_str_cat_lit(mrb, entry, "+0x");
-    mrb_str_cat_cstr(mrb, entry, int_to_str((size_t)funcdiff, sizeof(buf), buf, 16));
-  }
-
-  if (filename) {
-    mrb_str_cat_lit(mrb, entry, " ");
-    mrb_str_cat_cstr(mrb, entry, filename);
-
-    if (lineno > 0) {
-      mrb_str_cat_lit(mrb, entry, ":");
-      mrb_str_cat_cstr(mrb, entry, int_to_str((size_t)lineno, sizeof(buf), buf, 10));
-    }
-  }
-
-  mrb_ary_push(mrb, bt, entry);
 }
 
 static int
@@ -151,7 +106,8 @@ need_unwind_mruby_frames(const mrb_callinfo *ci, const char function[])
 }
 
 static void
-entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo **ci, mrb_value bt)
+entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo **ci,
+                   mruby_stacktrace_report_func *report, void *opaque)
 {
   for (;;) {
     const char *method = (**ci).mid ? mrb_sym_name(mrb, (**ci).mid) : "<n/a>";
@@ -164,7 +120,7 @@ entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo 
       lineno = -1;
     }
 
-    report_frame(mrb, *c, *ci, bt, -1, method, -1, filename, lineno);
+    report(mrb, *c, *ci, 0, method, -1, filename, lineno, opaque);
     mrb_gc_arena_restore(mrb, ai);
 
     if (*ci > (**c).cibase) {
@@ -189,8 +145,9 @@ entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo 
 }
 
 static void
-entry_frame(mrb_state *mrb, struct mrb_context **c, mrb_callinfo **ci, mrb_value bt,
-            intptr_t pc, const char *function0, intptr_t funcdiff, const char *filename, int lineno)
+entry_frame(mrb_state *mrb, struct mrb_context **c, mrb_callinfo **ci,
+            uintptr_t pc, const char *function0, intptr_t funcdiff, const char *filename, int lineno,
+            mruby_stacktrace_report_func *report, void *opaque)
 {
   int ai = mrb_gc_arena_save(mrb);
 
@@ -222,30 +179,27 @@ entry_frame(mrb_state *mrb, struct mrb_context **c, mrb_callinfo **ci, mrb_value
 #endif
 
   if (*c && function && need_unwind_mruby_frames(*ci, function)) {
-    entry_mruby_frames(mrb, ai, c, ci, bt);
+    entry_mruby_frames(mrb, ai, c, ci, report, opaque);
   }
 
-  report_frame(mrb, *c, *ci, bt, (intptr_t)pc, function, funcdiff, filename, lineno);
+  report(mrb, *c, *ci, (uintptr_t)pc, function, funcdiff, filename, lineno, opaque);
   mrb_gc_arena_restore(mrb, ai);
 }
 
 #ifdef MRUBY_STACKTRACE_USE_BOOST
 #include <boost/stacktrace.hpp>
 
-MRB_API mrb_value
-mruby_stacktrace(mrb_state *mrb)
+MRB_API void
+mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)
 {
-  mrb_value bt = mrb_ary_new_capa(mrb, 10);
   struct mrb_context *c = mrb->c;
   mrb_callinfo *ci = c->ci;
 
   for (boost::stacktrace::frame frame: boost::stacktrace::stacktrace()) {
-    entry_frame(mrb, &c, &ci, bt,
+    entry_frame(mrb, &c, &ci,
                 (intptr_t)frame.address(), frame.name().c_str(), -1,
-                frame.source_file().c_str(), frame.source_line());
+                frame.source_file().c_str(), frame.source_line(), report, opaque);
   }
-
-  return bt;
 }
 #endif // MRUBY_STACKTRACE_USE_BOOST
 
@@ -255,10 +209,9 @@ mruby_stacktrace(mrb_state *mrb)
 #pragma message("TODO: 段階的な拡張を行う")
 #define MAXFRAMES 1048576
 
-MRB_API mrb_value
-mruby_stacktrace(mrb_state *mrb)
+MRB_API void
+mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)
 {
-  mrb_value bt = mrb_ary_new_capa(mrb, 10);
   struct mrb_context *c = mrb->c;
   mrb_callinfo *ci = c->ci;
   int ai = mrb_gc_arena_save(mrb);
@@ -276,13 +229,11 @@ mruby_stacktrace(mrb_state *mrb)
     *modname++ = '\0';
     long diff = strtol(diffp, NULL, 0);
 
-    entry_frame(mrb, &c, &ci, bt, (intptr_t)addrp[i], function, diff, modname, 0);
+    entry_frame(mrb, &c, &ci, (intptr_t)addrp[i], function, diff, modname, 0, report, opaque);
   }
 
   free(out);
   mrb_gc_arena_restore(mrb, ai);
-
-  return bt;
 }
 #endif // MRUBY_STACKTRACE_USE_EXECINFO
 
@@ -294,10 +245,11 @@ static struct backtrace_state *backtrace_state0;
 struct mruby_stacktrace_receptor
 {
   mrb_state *mrb;
-  mrb_value bt;
   struct mrb_context *c;
   mrb_callinfo *ci;
   int ai;
+  mruby_stacktrace_report_func *report;
+  void *opaque;
 };
 
 static int
@@ -305,37 +257,29 @@ mruby_stacktrace_receptor(void *data, uintptr_t pc, const char *filename, int li
 {
   struct mruby_stacktrace_receptor *a = (struct mruby_stacktrace_receptor *)data;
 
-  entry_frame(a->mrb, &a->c, &a->ci, a->bt,
+  entry_frame(a->mrb, &a->c, &a->ci,
               (intptr_t)pc, (function && function[0] != '\0' ? function : "(\?\?\?)"), 0,
-              (filename && filename[0] != '\0' ? filename : NULL), lineno);
+              (filename && filename[0] != '\0' ? filename : NULL), lineno,
+              a->report, a->opaque);
 
   return 0;
 }
 
-MRB_API mrb_value
-mruby_stacktrace(mrb_state *mrb)
+MRB_API void
+mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)
 {
-  struct mruby_stacktrace_receptor a = {
-    mrb,
-    mrb_ary_new_capa(mrb, 10),
-    mrb->c,
-    mrb->c->ci,
-    mrb_gc_arena_save(mrb)
-  };
+  struct mruby_stacktrace_receptor a = { mrb, mrb->c, mrb->c->ci, mrb_gc_arena_save(mrb), report, opaque };
 
   backtrace_full(backtrace_state0, 0, mruby_stacktrace_receptor, NULL, &a);
-
-  return a.bt;
 }
 #endif // MRUBY_STACKTRACE_USE_LIBBACKTRACE
 
 #ifdef MRUBY_STACKTRACE_USE_LIBUNWIND
 #include <libunwind.h>
 
-MRB_API mrb_value
-mruby_stacktrace(mrb_state *mrb)
+MRB_API void
+mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)
 {
-  mrb_value bt = mrb_ary_new_capa(mrb, 10);
   struct mrb_context *c = mrb->c;
   mrb_callinfo *ci = c->ci;
 
@@ -358,17 +302,120 @@ mruby_stacktrace(mrb_state *mrb)
     unw_word_t offset;
     ret = unw_get_proc_name(&cursor, funcname, sizeof(funcname), &offset);
 
-    entry_frame(mrb, &c, &ci, bt, (intptr_t)pc, funcname, offset, NULL, 0);
+    entry_frame(mrb, &c, &ci, (intptr_t)pc, funcname, offset, NULL, 0, report, opaque);
   } while (unw_step(&cursor) > 0);
-
-  return bt;
 }
 #endif // MRUBY_STACKTRACE_USE_LIBUNWIND
+
+static void
+output_frame(mrb_state *mrb, const struct mrb_context *c, const mrb_callinfo *ci,
+             uintptr_t pc, const char *function, intptr_t funcdiff,
+             const char *filename, int lineno,
+             void (*output)(mrb_state *mrb, size_t buflen, const char *buf, void *opaque), void *opaque)
+{
+  char buf[32];
+  const char *p;
+
+#define OUTPUT_LIT(MRB, LIT, OPAQUE) output(MRB, sizeof(LIT) - 1, ("" LIT), OPAQUE)
+
+  if (pc > 0) {
+    p = addr_to_hex((size_t)pc, sizeof(buf), buf);
+    output(mrb, buf + sizeof(buf) - 1 - p, p, opaque);
+  } else {
+    OUTPUT_LIT(mrb, COND64("             ", "     "), opaque);
+    p = fiber_tac_name(buf, c);
+    output(mrb, 5, p, opaque);
+    OUTPUT_LIT(mrb, "+", opaque);
+    p = int_to_str((ci - c->cibase), sizeof(buf), buf, 10);
+    output(mrb, buf + sizeof(buf) - 1 - p, p, opaque);
+  }
+
+  OUTPUT_LIT(mrb, " ", opaque);
+  output(mrb, strlen(function), function, opaque);
+
+  if (funcdiff > 0) {
+    OUTPUT_LIT(mrb, "+0x", opaque);
+    p = int_to_str((size_t)funcdiff, sizeof(buf), buf, 16);
+    output(mrb, buf + sizeof(buf) - 1 - p, p, opaque);
+  }
+
+  if (filename) {
+    OUTPUT_LIT(mrb, " ", opaque);
+    output(mrb, strlen(filename), filename, opaque);
+
+    if (lineno > 0) {
+      OUTPUT_LIT(mrb, ":", opaque);
+      p = int_to_str((size_t)lineno, sizeof(buf), buf, 10);
+      output(mrb, buf + sizeof(buf) - 1 - p, p, opaque);
+    }
+  }
+
+  output(mrb, 0, 0, opaque); // end of frame
+}
+
+static void
+str_concat(mrb_state *mrb, size_t buflen, const char *buf, void *opaque)
+{
+  mrb_str_cat(mrb, *(mrb_value *)opaque, buf, buflen);
+}
+
+static mrb_bool
+report_frame(mrb_state *mrb, const struct mrb_context *c, const mrb_callinfo *ci,
+             uintptr_t pc, const char *function, intptr_t funcdiff,
+             const char *filename, int lineno, void *opaque)
+{
+  mrb_value entry = mrb_str_new(mrb, NULL, 0);
+  output_frame(mrb, c, ci, pc, function, funcdiff, filename, lineno, str_concat, &entry);
+  mrb_ary_push(mrb, *(mrb_value *)opaque, entry);
+
+  return TRUE;
+}
+
+MRB_API mrb_value
+mruby_stacktrace(mrb_state *mrb)
+{
+  mrb_value bt = mrb_ary_new_capa(mrb, 10);
+  mruby_stacktrace_foreach(mrb, report_frame, &bt);
+  return bt;
+}
 
 static mrb_value
 obj_stacktrace(mrb_state *mrb, mrb_value self)
 {
   return mruby_stacktrace(mrb);
+}
+
+#ifndef MRB_NO_STDIO
+static void
+stdout_output(mrb_state *mrb, size_t buflen, const char *buf, void *opaque)
+{
+  (void)mrb;
+  (void)opaque;
+
+  if (buf) {
+    fwrite(buf, buflen, 1, stdout);
+  } else {
+    fwrite("\n", 1, 1, stdout);
+  }
+}
+
+static mrb_bool
+stdout_report_frame(mrb_state *mrb, const struct mrb_context *c, const mrb_callinfo *ci,
+                    uintptr_t pc, const char *function, intptr_t funcdiff,
+                    const char *filename, int lineno, void *opaque)
+{
+  output_frame(mrb, c, ci, pc, function, funcdiff, filename, lineno, stdout_output, NULL);
+
+  return TRUE;
+}
+#endif
+
+MRB_API void
+mruby_stacktrace_print(mrb_state *mrb)
+{
+#ifndef MRB_NO_STDIO
+  mruby_stacktrace_foreach(mrb, stdout_report_frame, NULL);
+#endif
 }
 
 void
