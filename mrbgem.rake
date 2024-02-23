@@ -93,6 +93,7 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       }
       file File.join(build_dir, "gem_init.c") => conffile
       file conffile => [MRUBY_CONFIG, __FILE__] do
+        _pp "CHECK", conffile
         detect_libraries(YAML.load_file(File.join(__dir__, "preset-libs.yaml")))
       end
     end
