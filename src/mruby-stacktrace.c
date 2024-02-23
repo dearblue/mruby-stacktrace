@@ -125,7 +125,12 @@ report_frame(mrb_state *mrb, struct mrb_context *c, mrb_callinfo *ci, mrb_value 
 static int
 need_unwind_mruby_frames(const mrb_callinfo *ci, const char function[])
 {
-  if (strcmp(function, "mrb_vm_exec") == 0) {
+#if MRUBY_RELEASE_NO >= 10300
+# define MRB_VM_EXEC_FUNCNAME "mrb_vm_exec"
+#else
+# define MRB_VM_EXEC_FUNCNAME "mrb_context_run"
+#endif
+  if (strcmp(function, MRB_VM_EXEC_FUNCNAME) == 0) {
     return 1;
   }
 
@@ -171,7 +176,12 @@ entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo 
       const struct mrb_context *c1 = *c;
       *c = c1->prev ? c1->prev : c1 != mrb->root_c ? mrb->root_c : NULL;
       *ci = *c ? (**c).ci : NULL;
-      if (!*ci || c1->vmexec) {
+#if MRUBY_RELEASE_NO >= 10300
+# define EC_VMEXEC(C) ((C)->vmexec)
+#else
+# define EC_VMEXEC(C) FALSE
+#endif
+      if (!*ci || EC_VMEXEC(c1)) {
         return;
       }
     }

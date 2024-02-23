@@ -1,4 +1,5 @@
 require "tmpdir"
+require File.join(MRUBY_ROOT, "lib/mruby/source")
 
 MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
   s.summary = "unified stacktrace collector for C and mruby VM"
