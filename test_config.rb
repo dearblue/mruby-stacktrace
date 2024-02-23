@@ -19,17 +19,17 @@ config = YAML.load <<~'YAML'
       - :core: "mruby-io"
     host1:
       defines:
-      uses: with_libbacktrace
+      uses: use_libbacktrace
     host2:
       defines:
-      uses: with_execinfo
+      uses: use_execinfo
     host32-nan:
       defines: [MRB_INT32, MRB_NAN_BOXING]
-      uses: with_libunwind
+      uses: use_libunwind
     host64++:
       defines: [MRB_INT64, MRB_NO_BOXING]
       c++abi: true
-      uses: with_boost
+      uses: use_boost
 YAML
 
 config["builds"].each_pair do |n, c|

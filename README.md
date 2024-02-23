@@ -47,29 +47,29 @@ end
 
 ```ruby
   conf.gem "mruby-stacktrace", github: "dearblue/mruby-stacktrace" do |g|
-    g.with_libunwind
+    g.use_libunwind
   end
 ```
 
 現在のところ、指定可能なメソッドと既定値は以下のとおりです:
 
 ```ruby
-  def gem.with_libbacktrace(libraries: %w(backtrace),
-                            defines: nil,
-                            include_paths: "/usr/local/include",
-                            library_paths: "/usr/local/lib")
-  def gem.with_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
-                     defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
-                     include_paths: "/usr/local/include",
-                     library_paths: "/usr/local/lib")
-  def gem.with_execinfo(libraries: %w(execinfo),
+  def gem.use_libbacktrace(libraries: %w(backtrace),
+                           defines: nil,
+                           include_paths: "/usr/local/include",
+                           library_paths: "/usr/local/lib")
+  def gem.use_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
+                    defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
+                    include_paths: "/usr/local/include",
+                    library_paths: "/usr/local/lib")
+  def gem.use_execinfo(libraries: %w(execinfo),
+                       defines: nil,
+                       include_paths: "/usr/local/include",
+                       library_paths: "/usr/local/lib")
+  def gem.use_libunwind(libraries: %w(unwind unwind-x86_64),
                         defines: nil,
                         include_paths: "/usr/local/include",
                         library_paths: "/usr/local/lib")
-  def gem.with_libunwind(libraries: %w(unwind unwind-x86_64),
-                         defines: nil,
-                         include_paths: "/usr/local/include",
-                         library_paths: "/usr/local/lib")
 ```
 
 自動検出によるライブラリの優先度や設定値については [preset-libs.yaml](preset-libs.yaml) をご確認ください。
@@ -145,11 +145,11 @@ Ruby のメソッドの場合は、「ファイバーのニックネーム + コ
   - Dependency external mrbgems: (NONE)
   - Bundled C libraries (git-submodules): (NONE)
   - Dependency external libraries:
-      - [boost](https://www.boost.org/) (with C++ or `gem.with_boost`)
+      - [boost](https://www.boost.org/) (with C++ or `gem.use_boost`)
         under [Boost Software License](https://www.boost.org/LICENSE_1_0.txt)
-      - [libbacktrace](https://github.com/ianlancetaylor/libbacktrace) (with `gem.with_libbacktrace`)
+      - [libbacktrace](https://github.com/ianlancetaylor/libbacktrace) (with `gem.use_libbacktrace`)
         under [3 clause BSD License](https://github.com/ianlancetaylor/libbacktrace/blob/master/LICENSE)
-      - [libexecinfo](https://github.com/NetBSD/src/tree/trunk/lib/libexecinfo) (with `gem.with_execinfo`)
+      - [libexecinfo](https://github.com/NetBSD/src/tree/trunk/lib/libexecinfo) (with `gem.use_execinfo`)
         under [2 clause BSD License](https://github.com/NetBSD/src/blob/trunk/lib/libexecinfo/execinfo.h)
-      - [libunwind](https://github.com/libunwind/libunwind) (with `gem.with_libunwind`)
+      - [libunwind](https://github.com/libunwind/libunwind) (with `gem.use_libunwind`)
         under [MIT License](https://github.com/libunwind/libunwind/blob/master/COPYING)

@@ -9,10 +9,10 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
   s.author  = "dearblue"
   s.homepage = "https://github.com/dearblue/mruby-stacktrace"
 
-  def self.with_libbacktrace(libraries: %w(backtrace),
-                             defines: nil,
-                             include_paths: "/usr/local/include",
-                             library_paths: "/usr/local/lib")
+  def self.use_libbacktrace(libraries: %w(backtrace),
+                            defines: nil,
+                            include_paths: "/usr/local/include",
+                            library_paths: "/usr/local/lib")
     update_configuration("LIBBACKTRACE",
                          defines,
                          %w(backtrace.h),
@@ -20,10 +20,10 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
                          libraries, include_paths, library_paths)
   end
 
-  def self.with_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
-                      defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
-                      include_paths: "/usr/local/include",
-                      library_paths: "/usr/local/lib")
+  def self.use_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
+                     defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
+                     include_paths: "/usr/local/include",
+                     library_paths: "/usr/local/lib")
     update_configuration("BOOST",
                          defines,
                          %w(boost/stacktrace.hpp),
@@ -31,10 +31,10 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
                          libraries, include_paths, library_paths)
   end
 
-  def self.with_execinfo(libraries: %w(execinfo),
-                         defines: nil,
-                         include_paths: "/usr/local/include",
-                         library_paths: "/usr/local/lib")
+  def self.use_execinfo(libraries: %w(execinfo),
+                        defines: nil,
+                        include_paths: "/usr/local/include",
+                        library_paths: "/usr/local/lib")
     update_configuration("EXECINFO",
                          defines,
                          %w(execinfo.h),
@@ -42,10 +42,10 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
                          libraries, include_paths, library_paths)
   end
 
-  def self.with_libunwind(libraries: %w(unwind unwind-x86_64),
-                          defines: nil,
-                          include_paths: "/usr/local/include",
-                          library_paths: "/usr/local/lib")
+  def self.use_libunwind(libraries: %w(unwind unwind-x86_64),
+                         defines: nil,
+                         include_paths: "/usr/local/include",
+                         library_paths: "/usr/local/lib")
     update_configuration("LIBUNWIND",
                          defines,
                          %w(libunwind.h),
