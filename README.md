@@ -1,8 +1,8 @@
-mruby-stacktrace - C と mruby VM を組み合わせたスタックトレース情報の取得
+mruby-stacktrace - C と mruby VM を組み合わせたスタックトレースの取得
 ========================================================================
 
 Ruby のメソッドと C の関数のコールフレームを統合して取得するライブラリです。
-デバッグ時に C のスタック一覧と mruby VM のスタック一覧を別の紙に印刷して隣に並べる必要はありません。
+デバッグ時に C のスタックトレースと mruby VM のスタックトレースを別の紙に印刷して隣に並べる必要はありません。
 
 
 ちゅういとせいげん
@@ -54,22 +54,25 @@ end
 現在のところ、指定可能なメソッドと既定値は以下のとおりです:
 
 ```ruby
-  def gem.use_libbacktrace(libraries: %w(backtrace),
-                           defines: nil,
-                           include_paths: "/usr/local/include",
-                           library_paths: "/usr/local/lib")
-  def gem.use_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
-                    defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
-                    include_paths: "/usr/local/include",
-                    library_paths: "/usr/local/lib")
-  def gem.use_execinfo(libraries: %w(execinfo),
-                       defines: nil,
-                       include_paths: "/usr/local/include",
-                       library_paths: "/usr/local/lib")
-  def gem.use_libunwind(libraries: %w(unwind unwind-x86_64),
-                        defines: nil,
-                        include_paths: "/usr/local/include",
-                        library_paths: "/usr/local/lib")
+  def gem.use_libbacktrace( libraries: %w(backtrace),
+                            defines: nil,
+                            include_paths: "/usr/local/include",
+                            library_paths: "/usr/local/lib")
+
+  def gem.use_boost(        libraries: %w(boost_stacktrace_addr2line dl backtrace),
+                            defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
+                            include_paths: "/usr/local/include",
+                            library_paths: "/usr/local/lib")
+
+  def gem.use_execinfo(     libraries: %w(execinfo),
+                            defines: nil,
+                            include_paths: "/usr/local/include",
+                            library_paths: "/usr/local/lib")
+
+  def gem.use_libunwind(    libraries: %w(unwind unwind-x86_64),
+                            defines: nil,
+                            include_paths: "/usr/local/include",
+                            library_paths: "/usr/local/lib")
 ```
 
 自動検出によるライブラリの優先度や設定値については [preset-libs.yaml](preset-libs.yaml) をご確認ください。
@@ -78,7 +81,7 @@ end
 つかいかた
 ------------------------------------------------------------------------
 
-`Kernel#stacktrace` を呼び出すと、スタックトレース情報を文字列の配列として取得できます。
+`Kernel#stacktrace` を呼び出すと、スタックトレースを文字列の配列として取得できます。
 
 読み方は、C 関数の場合は「リターンアドレス」、「関数シンボル名 + 相対位置」、「モジュール名、またはソースコードファイル名」です。
 Ruby のメソッドの場合は、「ファイバーのニックネーム + コールスタック位置」、「メソッド名」、「ソースコードファイル名」です。
