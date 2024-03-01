@@ -1,7 +1,7 @@
 mruby-stacktrace - C と mruby VM を組み合わせたスタックトレースの取得
 ========================================================================
 
-Ruby のメソッドと C の関数のコールフレームを統合して取得するライブラリです。
+Ruby のメソッドと C の関数のスタックトレースを統合して取得するライブラリです。
 デバッグ時に C のスタックトレースと mruby VM のスタックトレースを別の紙に印刷して隣に並べる必要はありません。
 
 
@@ -20,6 +20,8 @@ Ruby のメソッドと C の関数のコールフレームを統合して取得
   - C API
       - `#include <mruby-stacktrace.h>`
           - `mrb_value mruby_stacktrace(mrb_state *mrb)`
+          - `void mruby_stacktrace_print(mrb_state *mrb)`
+          - `void mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)`
   - Ruby API
       - `Kernel#stacktrace`
 
