@@ -2,7 +2,7 @@
 #define MRUBY_STACKTRACE_INTERNALS_H 1
 
 #include <mruby.h>
-#include <mruby/irep.h>
+#include <mruby/irep.h>         // NOTE: Positions are locked for versions older than mruby-3.2.0
 #include <mruby/array.h>
 #include <mruby/class.h>
 #include <mruby/data.h>
@@ -13,9 +13,12 @@
 #include <mruby/string.h>
 #include <mruby/value.h>
 #include <mruby/variable.h>
-//#include <mruby-aux.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef MRB_PROC_IREP
+# define MRB_PROC_IREP(PROC) ((PROC)->body.irep)
+#endif
 
 #if MRUBY_RELEASE_NO >= 30100
 # define CI_CINFO_NONE_P(CI) ((CI)->cci == 0)

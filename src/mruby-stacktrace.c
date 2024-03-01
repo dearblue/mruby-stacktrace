@@ -114,7 +114,7 @@ entry_mruby_frames(mrb_state *mrb, int ai, struct mrb_context **c, mrb_callinfo 
 
     const char *filename;
     int32_t lineno;
-    const mrb_irep *irep = ((**ci).proc && !MRB_PROC_CFUNC_P((**ci).proc)) ? (**ci).proc->body.irep : NULL;
+    const mrb_irep *irep = ((**ci).proc && !MRB_PROC_CFUNC_P((**ci).proc)) ? MRB_PROC_IREP((**ci).proc) : NULL;
     if (!irep || !mrb_debug_get_position(mrb, irep, (**ci).pc - irep->iseq, &lineno, &filename)) {
       filename = NULL;
       lineno = -1;
