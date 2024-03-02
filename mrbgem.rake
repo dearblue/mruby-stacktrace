@@ -198,7 +198,7 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
           return true
         end
       end
-    end if false
+    end
 
     fail <<~FAIL
       \e[7mError\e[m: failed library detection (build: #{build.name})
