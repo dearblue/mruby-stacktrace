@@ -61,7 +61,8 @@ config["builds"].each_pair do |n, c|
       end
 
       if g.cc.command =~ /\b(?:g?cc|clang)\d*\b/
-        g.cc.flags << "-std=c99" unless c["c++abi"]
+        g.cc.flags << (c["c++abi"] ? "-std=c++11" : "-std=c99")
+        g.cxx.flags << "-std=c++11"
         g.cc.flags << "-pedantic"
         g.cc.flags << "-Wall"
       end

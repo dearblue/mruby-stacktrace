@@ -138,17 +138,17 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
 
   def self.detect_libraries(libs = @library_detectors)
     tool_cc = {
-      bin: build.cc.dup,
+      bin: self.cc.dup,
       src: ->(e) { "#{e}.c" }
     }
     tool_cxx = {
-      bin: build.cxx.dup,
+      bin: self.cxx.dup,
       src: ->(e) { "#{e}.cxx" }
     }
     tool_ld = {
-      bin: build.linker.dup,
-      obj: ->(e) { build.objfile(e) },
-      exe: ->(e) { build.exefile(e) }
+      bin: self.linker.dup,
+      obj: ->(e) { self.objfile(e) },
+      exe: ->(e) { self.exefile(e) }
     }
 
     [tool_cc, tool_cxx, tool_ld].each do |e|
