@@ -9,6 +9,7 @@ config = YAML.load <<~'YAML'
     gems:
     - :core: "mruby-sprintf"
     - :core: "mruby-print"
+    - :core: "mruby-fiber"
     - :core: "mruby-bin-mrbc"
     - :core: "mruby-bin-mirb"
     - :core: "mruby-bin-mruby"
@@ -36,7 +37,7 @@ config["builds"].each_pair do |n, c|
   MRuby::Build.new(n) do |conf|
     toolchain :clang
 
-    conf.build_dir = File.join("build", c["build_dir"] || name)
+    conf.build_dir = File.join(__dir__, "build", c["build_dir"] || name)
 
     enable_debug
     enable_test
