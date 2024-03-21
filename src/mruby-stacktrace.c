@@ -240,8 +240,6 @@ mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, v
 #ifdef MRUBY_STACKTRACE_USE_LIBBACKTRACE
 #include <backtrace.h>
 
-static struct backtrace_state *backtrace_state0;
-
 struct mruby_stacktrace_receptor
 {
   mrb_state *mrb;
@@ -268,6 +266,12 @@ mruby_stacktrace_receptor(void *data, uintptr_t pc, const char *filename, int li
 MRB_API void
 mruby_stacktrace_foreach(mrb_state *mrb, mruby_stacktrace_report_func *report, void *opaque)
 {
+  static struct backtrace_state *backtrace_state0;
+
+  if (!backtrace_state0) {
+    backtrace_state0 = backtrace_create_state(NULL, 1, NULL, NULL);
+  }
+
   struct mruby_stacktrace_receptor a = { mrb, mrb->c, mrb->c->ci, mrb_gc_arena_save(mrb), report, opaque };
 
   backtrace_full(backtrace_state0, 0, mruby_stacktrace_receptor, NULL, &a);
@@ -421,12 +425,6 @@ mruby_stacktrace_print(mrb_state *mrb)
 void
 mrb_mruby_stacktrace_gem_init(mrb_state *mrb)
 {
-#ifdef MRUBY_STACKTRACE_USE_LIBBACKTRACE
-  if (!backtrace_state0) {
-    backtrace_state0 = backtrace_create_state(NULL, 1, NULL, NULL);
-  }
-#endif
-
   struct RClass *kern = mrb->kernel_module;
 
   mrb_define_method(mrb, kern, "stacktrace", obj_stacktrace, MRB_ARGS_NONE());
