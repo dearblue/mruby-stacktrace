@@ -108,10 +108,19 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
     self
   end
 
-  build_config_initializer_origin = @build_config_initializer
-  @build_config_initializer = ->(*) do
-    instance_eval(&build_config_initializer_origin) if build_config_initializer_origin
+  unless respond_to?(:last_initializer)
+    def self.last_initializer(&block)
+      @last_initializer = block
+    end
 
+    build_config_initializer_origin = @build_config_initializer
+    @build_config_initializer = ->(*) do
+      instance_eval(&build_config_initializer_origin) if build_config_initializer_origin
+      instance_eval(&@last_initializer)
+    end
+  end
+
+  last_initializer do
     conffile = File.join(self.build_dir, "config.cache")
 
     Dir.glob(File.join(dir.gsub(/[\[\]\{\}]/) { |e| "\\#{e}" }, "{core,src}/**/*")) { |src|
