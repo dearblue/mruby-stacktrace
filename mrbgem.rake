@@ -1,5 +1,5 @@
-require "tmpdir"
-require File.join(MRUBY_ROOT, "lib/mruby/source")
+internals = File.join(__dir__, "contrib/mruby-buildconf/bootstrap.rb")
+using Module.new { module_eval File.read(internals), internals, 1 }
 
 MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
   s.summary = "unified stacktrace collector for C and mruby VM"
@@ -9,202 +9,124 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
   s.author  = "dearblue"
   s.homepage = "https://github.com/dearblue/mruby-stacktrace"
 
-  def self.use_libbacktrace(libraries: %w(backtrace),
-                            defines: nil,
-                            include_paths: "/usr/local/include",
-                            library_paths: "/usr/local/lib")
-    clear_feature_detectors
-    add_feature_detector defines: ["MRUBY_STACKTRACE_USE_LIBBACKTRACE", *defines],
-                         headers: %w(backtrace.h),
-                         libraries: libraries,
-                         symbols: %w(backtrace_full),
-                         include_paths: include_paths,
-                         library_paths: library_paths
-  end
-
-  def self.use_boost(libraries: %w(boost_stacktrace_addr2line dl backtrace),
-                     defines: %w(BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
-                     include_paths: "/usr/local/include",
-                     library_paths: "/usr/local/lib")
-    clear_feature_detectors
-    add_feature_detector defines: ["MRUBY_STACKTRACE_USE_BOOST", *defines],
-                         headers: %w(boost/stacktrace.hpp),
-                         libraries: libraries,
-                         symbols: %w(),
-                         include_paths: include_paths,
-                         library_paths: library_paths,
-                         cxx: true
-  end
-
-  def self.use_execinfo(libraries: %w(execinfo),
-                        defines: nil,
-                        include_paths: "/usr/local/include",
-                        library_paths: "/usr/local/lib")
-    clear_feature_detectors
-    add_feature_detector defines: ["MRUBY_STACKTRACE_USE_EXECINFO", *defines],
-                         headers: %w(execinfo.h),
-                         libraries: libraries,
-                         symbols: %w(backtrace backtrace_symbols_fmt),
-                         include_paths: include_paths,
-                         library_paths: library_paths
-  end
-
-  def self.use_libunwind(libraries: %w(unwind unwind-x86_64),
-                         defines: nil,
-                         include_paths: "/usr/local/include",
-                         library_paths: "/usr/local/lib")
-    clear_feature_detectors
-    add_feature_detector defines: ["MRUBY_STACKTRACE_USE_LIBUNWIND", *defines],
-                         headers: %w(libunwind.h),
-                         libraries: libraries,
-                         symbols: %w(unw_init_local unw_get_reg unw_get_proc_name),
-                         include_paths: include_paths,
-                         library_paths: library_paths
-  end
-
-  ### PUBLIC INTERFACE ENDS HERE
-
-
-
-  def self.update_configuration!(name, defines, libraries, include_paths, library_paths)
-    compilers.each do |cc|
-      cc.defines << ["MRUBY_STACKTRACE_USE_#{name}", *defines]
-      cc.include_paths << [*include_paths]
-    end
-    linker.libraries << [*libraries]
-    linker.library_paths << [*library_paths]
-  end
-
-  def self.add_feature_detector(code: nil, headers: [], libraries: [], symbols: [], include_paths: [], library_paths: [], defines: [], cxx: false)
-    unless code
-      code = <<~DETECT_CODE
-        #{[*headers].flatten.map { |h| %(#include <#{h}>\n) }.join}
-        int
-        main(int argc, char *argv[])
-        {
-        #{[*symbols].flatten.map { |f| %(\t(void)#{f};\n) }.join}
-        \treturn 0;
-        }
-      DETECT_CODE
-    end
-
-    @library_detectors ||= []
-    @library_detectors << {
-      "code" => code,
-      "header_files" => [*headers].flatten,
-      "libraries" => [*libraries].flatten,
-      "include_paths" => [*include_paths].flatten,
-      "library_paths" => [*library_paths].flatten,
-      "defines" => [*defines].flatten,
-      "abi" => (cxx ? "c++" : "c")
-    }
-
-    self
-  end
-
-  def self.clear_feature_detectors
-    @library_detectors ||= []
-    @library_detectors.clear
-    self
-  end
-
-  build_config_initializer_origin = @build_config_initializer
-  @build_config_initializer = ->(*) do
-    instance_eval(&build_config_initializer_origin) if build_config_initializer_origin
-
-    conffile = File.join(self.build_dir, "config.cache")
-
-    Dir.glob(File.join(dir.gsub(/[\[\]\{\}]/) { |e| "\\#{e}" }, "{core,src}/**/*")) { |src|
-      file src => conffile if File.file?(src)
-    }
-
-    file File.join(build_dir, "gem_init.c") => conffile
-
-    task conffile do |t|
-      if File.file?(conffile) && File.mtime(conffile) > [MRUBY_CONFIG, __FILE__].map { |e| File.mtime(e) }.max
-        y = YAML.load_file(conffile)
-        update_configuration!(*y.values_at(*%w(name defines libraries include_paths library_paths)))
-        timestamp = Time.at(1)
-      else
-        _pp "CHECK", conffile
-        detect_libraries
-        timestamp = Time.now
-      end
-      t.define_singleton_method(:timestamp, &-> { timestamp })
-    end
-  end
-
-  @library_detectors = YAML.load_file(File.join(__dir__, "preset-libs.yaml"))
-
-  def self.detect_libraries(libs = @library_detectors)
-    tool_cc = {
-      bin: self.cc.dup,
-      src: ->(e) { "#{e}.c" }
-    }
-    tool_cxx = {
-      bin: self.cxx.dup,
-      src: ->(e) { "#{e}.cxx" }
-    }
-    tool_ld = {
-      bin: self.linker.dup,
-      obj: ->(e) { self.objfile(e) },
-      exe: ->(e) { self.exefile(e) }
-    }
-
-    [tool_cc, tool_cxx, tool_ld].each do |e|
-      class << e[:bin]
-        def sh(*command)
-          system *command, out: File::NULL, err: File::NULL or fail
-        end
-
-        def _pp(*)
-        end
-      end
-    end
-
-    Dir.mktmpdir do |dir|
-      libs.each do |spec|
-        cc = (spec["abi"] == "c++" && build.cxx_abi_enabled?) ? tool_cxx : tool_cc
-        ld = tool_ld
-
-        src = cc[:src].call(File.join(dir, "1"))
-        File.write src, spec["code"] || <<~CODE
-          #{[*spec["header_files"]].flatten.map { |h| %(#include <#{h}>\n) }.join}
-          int
-          main(int argc, char *argv[])
-          {
-          #{[*spec["functions"]].flatten.map { |f| %(\t(void)#{f};\n) }.join}
-          \treturn 0;
-          }
-        CODE
-
-        obj = ld[:obj].call(File.join(dir, "1"))
-        exe = ld[:exe].call(File.join(dir, "1"))
-        if (cc[:bin].run(obj, src, [*spec["defines"]], [*spec["include_paths"]]) rescue nil) &&
-           (ld[:bin].run(exe, [obj], [*spec["libraries"]], [*spec["library_paths"]]) rescue nil)
-          update_configuration!(*spec.values_at(*%w(name defines libraries include_paths library_paths)))
-
-          FileUtils.mkpath build_dir
-          File.binwrite File.join(build_dir, "config.cache"), <<~CONFIG_YAML
-            %YAML 1.1
-            ---
-            name: #{spec["name"].inspect}
-            defines: #{[*spec["defines"]].inspect}
-            libraries: #{[*spec["libraries"]].inspect}
-            include_paths: #{[*spec["include_paths"]].inspect}
-            library_paths: #{[*spec["library_paths"]].inspect}
-          CONFIG_YAML
-
-          return true
-        end
-      end
-    end
-
-    fail <<~FAIL
-      \e[7mError\e[m: failed library detection (build: #{build.name})
-        | Please specify or revise the libraries to be used in your build configuration file.
-        | Or help me to improve auto-detection.
-        | See: #{File.join(self.dir, "README.md")}
-    FAIL
-  end
+  configuration_recipe(
+    "stacktrace",
+    {
+      variation: "libbacktrace",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBBACKTRACE),
+      libraries: "backtrace",
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "backtrace.h",
+        functions: "backtrace_full"
+      }
+    },
+    { # for GNU libc
+      variation: "execinfo",
+      defines: %w(MRUBY_STACKTRACE_USE_EXECINFO),
+      code: {
+        header_files: "execinfo.h",
+        "functions": %w(backtrace backtrace_symbols_fmt)
+      }
+    },
+    { # for BSD libexecinfo
+      variation: "execinfo",
+      defines: %w(MRUBY_STACKTRACE_USE_EXECINFO),
+      libraries: "execinfo",
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "execinfo.h",
+        functions: %w(backtrace backtrace_symbols_fmt),
+      },
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-x86_64),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-x86),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-aarch64),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-arm),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-ppc32),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: %w(unwind unwind-ppc64),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
+      }
+    },
+    {
+      variation: "boost",
+      abi: "c++",
+      defines: %w(MRUBY_STACKTRACE_USE_BOOST BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
+      libraries: %w(boost_stacktrace_addr2line dl backtrace),
+      include_paths: "/usr/local/include",
+      library_paths: "/usr/local/lib",
+      code: {
+        type: ".cxx",
+        header_files: "boost/stacktrace.hpp",
+      }
+    },
+    {
+      variation: "libunwind",
+      defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
+      libraries: "gcc_eh",
+      code: {
+        header_files: "libunwind.h",
+        functions: %w(unw_init_local unw_get_reg unw_get_proc_name)
+      },
+    },
+    abort: true)
 end

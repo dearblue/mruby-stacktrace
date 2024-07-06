@@ -1,0 +1,3 @@
+[submodule "contrib/mruby-buildconf"]
+	path = contrib/mruby-buildconf
+	url = https://github.com/dearblue/mruby-buildconf.git

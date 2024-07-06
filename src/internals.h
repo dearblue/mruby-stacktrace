@@ -28,7 +28,7 @@
 # define CI_CINFO_DIRECT_P(CI) ((CI)->acc == -2)
 #endif
 
-#if MRUBY_RELEASE_NO <= 30100
+#if MRUBY_RELEASE_NO <= 30200
 # if MRUBY_RELEASE_NO <= 20000
 #  define mrb_debug_get_filename(M, I, P) mrb_debug_get_filename(I, P)
 #  define mrb_debug_get_line(M, I, P) mrb_debug_get_line(I, P)

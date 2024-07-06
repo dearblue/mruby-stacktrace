@@ -15,6 +15,10 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 #max_line_length = 160
 
+[.git*]
+indent_style = tab
+indent_size = 8
+
 [*.{c,cc,C,cxx,cpp,h,hh,H,hxx,hpp,inc}]
 
 [{*.rb,Rakefile,rakefile,*.rake,*.gemspec,*.gembox}]
