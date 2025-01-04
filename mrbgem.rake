@@ -15,8 +15,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libbacktrace",
       defines: %w(MRUBY_STACKTRACE_USE_LIBBACKTRACE),
       libraries: "backtrace",
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "backtrace.h",
         functions: "backtrace_full"
@@ -34,8 +32,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "execinfo",
       defines: %w(MRUBY_STACKTRACE_USE_EXECINFO),
       libraries: "execinfo",
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "execinfo.h",
         functions: %w(backtrace backtrace_symbols_fmt),
@@ -45,8 +41,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-x86_64),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -56,8 +50,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-x86),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -67,8 +59,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-aarch64),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -78,8 +68,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-arm),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -89,8 +77,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-ppc32),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -100,8 +86,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       variation: "libunwind",
       defines: %w(MRUBY_STACKTRACE_USE_LIBUNWIND),
       libraries: %w(unwind unwind-ppc64),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         header_files: "libunwind.h",
         functions: %w(unw_init_local unw_get_reg unw_get_proc_name),
@@ -112,8 +96,6 @@ MRuby::Gem::Specification.new("mruby-stacktrace") do |s|
       abi: "c++",
       defines: %w(MRUBY_STACKTRACE_USE_BOOST BOOST_STACKTRACE_USE_ADDR2LINE _GNU_SOURCE),
       libraries: %w(boost_stacktrace_addr2line dl backtrace),
-      include_paths: "/usr/local/include",
-      library_paths: "/usr/local/lib",
       code: {
         type: ".cxx",
         header_files: "boost/stacktrace.hpp",
